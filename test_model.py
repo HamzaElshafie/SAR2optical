@@ -1,39 +1,35 @@
 import matplotlib.pyplot as plt
-import sys
 import numpy as np
 import os
-from keras.models import Model,load_model
+from keras.models import load_model
 from keras.preprocessing.image import img_to_array, load_img
 import matplotlib.pyplot as plt
-import scipy.misc
 
-model=load_model('generator150.h5')
+# Load the pre-trained model
+model = load_model('generator150.h5')
 
-rootpath=os.path.abspath('./')
-path_sar = os.path.join(rootpath,'sar_ims')
-sar_list=os.listdir(path_sar)
+# Define the root path and the SAR images path
+rootpath = os.path.abspath('./')
+path_sar = os.path.join(rootpath, 'content/SAR2optical/dataset/test/s1')
+sar_list = os.listdir(path_sar)
 sar_list.sort()
+
+# Load and preprocess SAR images
 imgs_sar = []
 for img_path in sar_list:
     print(img_path)
-    img_sar = img_to_array(load_img(os.path.join(path_sar,img_path),color_mode='grayscale',target_size=(256,256)))
+    img_sar = img_to_array(load_img(os.path.join(path_sar, img_path), color_mode='grayscale', target_size=(256, 256)))
     imgs_sar.append(img_sar)
-imgs_sar = np.array(imgs_sar)/127.5 - 1.
+imgs_sar = np.array(imgs_sar) / 127.5 - 1.
 
+# Generate fake images using the model
 fake_A = model.predict(imgs_sar)
-fake_A = fake_A*0.5+0.5
+fake_A = fake_A * 0.5 + 0.5
 
-# gen_imgs = [imgs_sar,fake_A]
-r, c = 15, 2
-# titles = ['Condition', 'Generated']
-# fig= plt.figure(figsize=(1,1),dpi=256)
+# Save generated images
+output_dir = os.path.join(rootpath, 'content/SAR2optical/dataset/test/generated_images')
+os.makedirs(output_dir, exist_ok=True)
+for i in range(len(fake_A)):
+    plt.imsave(os.path.join(output_dir, f'out_{sar_list[i]}.jpg'), fake_A[i])
 
-# for i in range(r): #batch
-#     plt.imshow(fake_A[i])
-#     plt.axis('off')
-#     plt.savefig("images/test"+sar_list[i]+".png")
-# plt.close()
-
-
-for i in range(r):
-    scipy.misc.imsave('images/out'+sar_list[i]+'.jpg', fake_A[i])
+print("Generated images saved successfully.")

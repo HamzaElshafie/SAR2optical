@@ -10,10 +10,10 @@ class DataLoader():
 
     def load_data(self, batch_size=1, is_testing=False):
         data_type = "train" if not is_testing else "test"
-        path_sar = os.path.join('/home1/dataset/sar-op/subset_spring_90/',data_type,'sar','s1_90')
+        path_sar = os.path.join('/content/SAR2optical/dataset/',data_type,'s1')
         sar_list=os.listdir(path_sar)
         sar_list.sort()
-        path_op=os.path.join('/home1/dataset/sar-op/subset_spring_90/',data_type,'op','s2_90')
+        path_op=os.path.join('/content/SAR2optical/dataset',data_type,'s2')
         op_list=os.listdir(path_op)
         op_list.sort()
         
@@ -49,10 +49,10 @@ class DataLoader():
 
     def load_batch(self, batch_size=1, is_testing=False):
         data_type = "train" if not is_testing else "test"
-        path_sar = os.path.join('/home1/dataset/sar-op/subset_spring_90/',data_type,'sar','s1_90')
+        path_sar = os.path.join('/content/SAR2optical/dataset/',data_type,'s1')
         sar_list=os.listdir(path_sar)
         sar_list.sort()
-        path_op=os.path.join('/home1/dataset/sar-op/subset_spring_90/',data_type,'op','s2_90')
+        path_op=os.path.join('/content/SAR2optical/dataset',data_type,'s2')
         op_list=os.listdir(path_op)
         op_list.sort()
         self.n_batches = int(len(sar_list) / batch_size)

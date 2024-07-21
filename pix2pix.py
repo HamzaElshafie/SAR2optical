@@ -1,25 +1,16 @@
 from __future__ import print_function, division
-import scipy
-
-# from keras.datasets import mnist
-# from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
-from keras.layers import Input, Dense, Reshape, Flatten, Dropout, Concatenate
-from keras.layers import BatchNormalization, Activation, ZeroPadding2D
-from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.convolutional import UpSampling2D, Conv2D
-from keras.models import Sequential, Model
-from keras.optimizers import Adam
-import datetime
-import matplotlib.pyplot as plt
-import sys
-from data_loader import DataLoader
-import numpy as np
 import os
-
-import keras.backend.tensorflow_backend as ktf
+import datetime
+import numpy as np
+import matplotlib.pyplot as plt
 import tensorflow as tf
-
-
+from tensorflow.keras.layers import Input, Dense, Reshape, Flatten, Dropout, Concatenate
+from tensorflow.keras.layers import BatchNormalization, Activation, ZeroPadding2D
+from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.layers import UpSampling2D, Conv2D
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.optimizers import Adam
+from data_loader import DataLoader
 
 class Pix2Pix():
     def __init__(self):
@@ -32,7 +23,6 @@ class Pix2Pix():
         self.gray_shape = (self.img_rows, self.img_cols, self.gray_channels)
         # Configure data loader
         self.data_loader = DataLoader(img_res=(self.img_rows, self.img_cols))
-
 
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2**4)
@@ -47,20 +37,15 @@ class Pix2Pix():
         # Build and compile the discriminator
         self.discriminator = self.build_discriminator()
         self.discriminator.compile(loss='mse',
-            optimizer=optimizer,
-            metrics=['accuracy'])
-
-        #-------------------------
-        # Construct Computational
-        #   Graph of Generator
-        #-------------------------
+                                   optimizer=optimizer,
+                                   metrics=['accuracy'])
 
         # Build the generator
         self.generator = self.build_generator()
 
         # Input images and their conditioning images
-        img_A = Input(shape=self.rgb_shape) #op
-        img_B = Input(shape=self.gray_shape) #sar
+        img_A = Input(shape=self.rgb_shape) # op
+        img_B = Input(shape=self.gray_shape) # sar
 
         # By conditioning on B generate a fake version of A
         fake_A = self.generator(img_B)
@@ -68,7 +53,7 @@ class Pix2Pix():
         # For the combined model we will only train the generator
         self.discriminator.trainable = False
 
-        # Discriminators determines validity of translated images / condition pairs
+        # Discriminator determines validity of translated images / condition pairs
         valid = self.discriminator([fake_A, img_B])
 
         self.combined = Model(inputs=[img_A, img_B], outputs=[valid, fake_A])
@@ -175,10 +160,6 @@ class Pix2Pix():
                 # -----------------
 
                 # Train the generators
-                # 根据line74 outputs=[valid, fake_A]，（此处valid是D的输出，下面valid是1
-                # 以及line75 self.combined.compile(loss=['mse', 'mae'],
-                # 可知使用mse计算D输出与[1]之间损失，使用mae计算fake_A和imgs_A之间的损失，
-                # 二者权重关系在cmopile中定义
                 g_loss = self.combined.train_on_batch([imgs_A, imgs_B], [valid, imgs_A])
 
                 elapsed_time = datetime.datetime.now() - start_time
@@ -192,8 +173,8 @@ class Pix2Pix():
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
                     self.sample_images(epoch, batch_i)
-            if epoch % 5==0:
-                self.generator.save('generator%d.h5' % (epoch))
+            if epoch % 5 == 0:
+                self.generator.save('generator%d.h5' % epoch)
                 self.combined.save('combined%d.h5' % epoch)
 
 
@@ -204,37 +185,35 @@ class Pix2Pix():
         imgs_A, imgs_B = self.data_loader.load_data(batch_size=3, is_testing=True)
         fake_A = self.generator.predict(imgs_B)
 
-        # gen_imgs = np.concatenate([imgs_B, fake_A, imgs_A])
-
         # Rescale images 0 - 1
-        # gen_imgs = 0.5 * gen_imgs + 0.5
-        imgs_B =0.5 * imgs_B + 0.5
-        imgs_A=0.5 * imgs_A + 0.5
-        fake_A=0.5 * fake_A + 0.5
-        print('sample',imgs_B.shape,imgs_A.shape,fake_A.shape)
-        gen_imgs = [imgs_B,fake_A,imgs_A]
+        imgs_B = 0.5 * imgs_B + 0.5
+        imgs_A = 0.5 * imgs_A + 0.5
+        fake_A = 0.5 * fake_A + 0.5
+        print('sample', imgs_B.shape, imgs_A.shape, fake_A.shape)
+        gen_imgs = [imgs_B, fake_A, imgs_A]
 
         titles = ['Condition', 'Generated', 'Original']
         fig, axs = plt.subplots(r, c)
-        for i in range(r): #batch
+        for i in range(r): # batch
             for j in range(c):
-                if j ==0:
-                    axs[i,j].imshow(gen_imgs[j][i][:,:,0],cmap='gray')
+                if j == 0:
+                    axs[i, j].imshow(gen_imgs[j][i][:,:,0], cmap='gray')
                 else:
-                    axs[i,j].imshow(gen_imgs[j][i])
+                    axs[i, j].imshow(gen_imgs[j][i])
                 axs[i, j].set_title(titles[j])
-                axs[i,j].axis('off')
+                axs[i, j].axis('off')
         fig.savefig("images/%d_%d.png" % (epoch, batch_i))
         plt.close()
-        
-
 
 if __name__ == '__main__':
-    # GPU 显存自动调用
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth=True
-    session = tf.Session(config=config)
-    ktf.set_session(session)
-    os.environ["CUDA_VISIBLE_DEVICES"]="3"
+    # GPU memory management
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+        except RuntimeError as e:
+            print(e)
+    
     gan = Pix2Pix()
     gan.train(epochs=200, batch_size=16, sample_interval=10)
